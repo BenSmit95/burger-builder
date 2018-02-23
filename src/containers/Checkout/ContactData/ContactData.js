@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import axios from '../../../axios-orders';
 import { connect } from 'react-redux';
+import { updateObject, checkValidity } from '../../../shared/utility';
 
 import Button from '../../../components/UI/Button/Button';
 import Spinner from '../../../components/UI/Spinner/Spinner';
@@ -105,23 +106,23 @@ class ContactData extends Component {
     const order = {
       ingredients: this.props.ings,
       price: this.props.price,
-      orderData: formData
+      orderData: formData,
+      userId: this.props.userId
     }
 
     this.props.onOrderBurger(order, this.props.token);
   }
 
   inputChangedHandler = (event, inputIdentifier) => {
-    const updatedOrderForm = { 
-      ...this.state.orderForm,
-    };
-    const updatedFormElement = {
-      ...updatedOrderForm[inputIdentifier]
-    };
-    updatedFormElement.value = event.target.value;
-    updatedFormElement.valid = this.checkValidity(updatedFormElement.value, updatedFormElement.validation);
-    updatedFormElement.touched = true;
-    updatedOrderForm[inputIdentifier] = updatedFormElement;
+    const updatedFormElement = updateObject(this.state.orderForm[inputIdentifier], {
+      value: event.target.value,
+      valid: checkValidity(event.target.value, this.state.orderForm[inputIdentifier].validation),
+      touched: true
+    });
+
+    const updatedOrderForm = updateObject(this.state.orderForm, {
+      [inputIdentifier]: updatedFormElement
+    });
 
 
     let formIsValid = true;
@@ -130,23 +131,6 @@ class ContactData extends Component {
     }
 
     this.setState({ orderForm: updatedOrderForm, formIsValid });
-  }
-  
-  checkValidity(value, rules) {
-    let isValid = true;
-
-    if(rules.required) {
-      isValid = value.trim() !== '' && isValid;
-    }
-
-    if(rules.minLength) {
-      isValid = value.length >= rules.minLength && isValid
-    }
-    if(rules.maxLength) {
-      isValid = value.length <= rules.maxLength && isValid
-    }
-
-    return isValid;
   }
 
   render() {
@@ -192,7 +176,8 @@ const mapStateToProps = (state) => ({
   ings: state.burgerBuilder.ingredients,
   price: state.burgerBuilder.totalPrice,
   loading: state.order.loading,
-  token: state.auth.token
+  token: state.auth.token,
+  userId: state.auth.userId
 });
 
 const mapDispatchToProps = (dispatch) => ({
